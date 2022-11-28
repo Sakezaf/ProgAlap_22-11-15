@@ -23,8 +23,16 @@ unsigned int readu(char *msg);
 double readd(char *msg);
 Date read_date(char *msg);
 Employee read_employee(char *msg);
+
+unsigned int random_u(const unsigned int min, const unsigned int max);
+
 void print_date(const Date date);
 void print_employee(const Employee employee);
+void print_employees(const Employee employees[], const size_t size);
+
+void increase_salary(Employee *employee, const unsigned int amount);
+void hr(Employee employees[], const size_t size, const bool end_of_year);
+
 double hourly_rate(const Employee employee);
 size_t highest_salary(const Employee employees[], const size_t size);
 size_t highest_hourly_rate(const Employee employees[], const size_t size);
@@ -32,7 +40,10 @@ double average_salary(const Employee employees[], const size_t size);
 size_t oldest_employee(const Employee employees[], const size_t size);
 int cmp_date(const Date date1, const Date date2);
 size_t search(const Employee employees[], const size_t size, const char *search);
+void swap_employees(Employee *restrict emp1, Employee *restrict emp2);
 void sort_by_salary(Employee employees[], const size_t size);
+void sort_by_age(Employee employees[], const size_t size);
+void sort_by_name(Employee employees[], const size_t size);
 
 int main(int argc, char const *argv[])
 {
@@ -45,10 +56,7 @@ int main(int argc, char const *argv[])
         employees[i] = read_employee(msg);
     }
 
-    for (size_t i = 0; i < size; i++)
-    {
-        print_employee(employees[i]);
-    }
+    print_employees(employees, size);
 
     puts("\nHighest salary:");
     print_employee(employees[highest_salary(employees, size)]);
@@ -70,6 +78,18 @@ int main(int argc, char const *argv[])
     {
         printf("%s is not an employee here.\n", name);
     }
+
+    sort_by_salary(employees, size);
+    print_employees(employees, size);
+
+    sort_by_age(employees, size);
+    print_employees(employees, size);
+
+    sort_by_name(employees, size);
+    print_employees(employees, size);
+
+    hr(employees, size, true);
+    print_employees(employees, size);
 
     return 0;
 }
@@ -143,9 +163,14 @@ Employee read_employee(char *msg)
     return employee;
 }
 
+unsigned int random_u(const unsigned int min, const unsigned int max)
+{
+    return rand() % (max - min) + min;
+}
+
 void print_date(const Date date)
 {
-    printf("%u.%u.%u\n", date.year, date.month, date.day);
+    printf("%u.%2u.%2u", date.year, date.month, date.day);
 }
 
 void print_employee(const Employee employee)
@@ -153,9 +178,36 @@ void print_employee(const Employee employee)
     printf("Name: %s\n", employee.name);
     printf("Birthdate: ");
     print_date(employee.birthdate);
-    printf("Salary (celery): %lf\n", employee.salary);
+    printf("\nSalary (celery): %lf\n", employee.salary);
     printf("Weekly hours: %u\n", employee.weekly_hours);
     printf("Hourly rate: %.2lf\n", hourly_rate(employee));
+}
+
+void print_employees(const Employee employees[], const size_t size)
+{
+    printf("\n| %30s | %10s | %7s | %4s |\n", "Name", "BDate", "Salary", "WHrs");
+    for (size_t i = 0; i < size; i++)
+    {
+        printf("| %30s | ", employees[i].name);
+        print_date(employees[i].birthdate);
+        printf(" | %6.2lf | %4u |\n", employees[i].salary, employees[i].weekly_hours);
+    }
+}
+
+void increase_salary(Employee *employee, const unsigned int amount)
+{
+    employee->salary += amount;
+}
+
+void hr(Employee employees[], const size_t size, const bool end_of_year)
+{
+    if (end_of_year)
+    {
+        for (size_t i = 0; i < size; i++)
+        {
+            increase_salary(employees + i, random_u(0, 1000));
+        }
+    }
 }
 
 double hourly_rate(const Employee employee)
@@ -252,4 +304,81 @@ size_t search(const Employee employees[], const size_t size, const char *search)
         }
     }
     return found;
+}
+
+void swap_employees(Employee *restrict emp1, Employee *restrict emp2)
+{
+    Employee temp = *emp1;
+    *emp1 = *emp2;
+    *emp2 = temp;
+}
+
+void sort_by_salary(Employee employees[], const size_t size)
+{
+
+    for (size_t i = 0; i < size - 1; i++)
+    {
+        size_t max_index = i;
+        for (size_t j = i + 1; j < size; j++)
+        {
+            if (employees[j].salary > employees[i].salary)
+            {
+                max_index = j;
+            }
+        }
+
+        if (max_index != i)
+        {
+            swap_employees(&employees[i], &employees[max_index]);
+        }
+    }
+}
+
+void sort_by_age(Employee employees[], const size_t size)
+{
+    for (size_t i = 0; i < size - 1; i++)
+    {
+        size_t oldest_index = i;
+        for (size_t j = i + 1; j < size; j++)
+        {
+            if (cmp_date(employees[oldest_index].birthdate, employees[j].birthdate))
+            {
+                oldest_index = j;
+            }
+        }
+
+        if (oldest_index != i)
+        {
+            swap_employees(&employees[i], &employees[oldest_index]);
+        }
+    }
+}
+
+void sort_by_name(Employee employees[], const size_t size)
+{
+    for (size_t i = 0; i < size - 1; i++)
+    {
+        size_t max_index = i;
+        for (size_t j = i + 1; j < size; j++)
+        {
+            int cmp = strcmp(employees[j].name, employees[max_index].name);
+            if (cmp < 0)
+            {
+                max_index = j;
+            }
+            else if (cmp == 0)
+            {
+                // sort by age if names are equal
+                if (cmp_date(employees[max_index].birthdate, employees[j].birthdate))
+                {
+                    max_index = j;
+                }
+            }
+        }
+
+        if (max_index != i)
+        {
+            swap_employees(&employees[i], &employees[max_index]);
+        }
+    }
 }
